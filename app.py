@@ -7,7 +7,7 @@ with open("model.pkl", "rb") as f:
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-# Custom HTML title and styles
+# Custom HTML styles and title
 st.markdown("""
     <style>
         .main-title {
@@ -46,21 +46,32 @@ st.markdown("""
     <br>
 """, unsafe_allow_html=True)
 
+# User input
 text = st.text_area("Enter the news article text below:")
 
+# Initialize prediction variables
+result = None
+label = ""
+color_class = ""
+
+# Prediction logic
 if st.button("🔍 Predict"):
     if text.strip() == "":
         st.warning("⚠️ Please enter some text.")
     else:
         vec = vectorizer.transform([text])
         result = model.predict(vec)[0]
-
         label = "✅ Real News" if result == 1 else "❌ Fake News"
         color_class = "real" if result == 1 else "fake"
 
-        import io
+        st.markdown(f"""
+        <div class="prediction-box {color_class}">
+            {label}
+        </div>
+        """, unsafe_allow_html=True)
 
-if st.button("⬇️ Download Report"):
+# Report download button (only shows if prediction was made)
+if result is not None:
     report = f"""Fake News Detector Report
 
 Input Text:
@@ -69,15 +80,9 @@ Input Text:
 Prediction:
 {"Real News" if result == 1 else "Fake News"}
 """
-    st.download_button("Download as TXT", data=report, file_name="report.txt")
+    st.download_button("⬇️ Download Report", data=report, file_name="report.txt")
 
-
-        st.markdown(f"""
-        <div class="prediction-box {color_class}">
-            {label}
-        </div>
-        """, unsafe_allow_html=True)
-
+# Footer
 st.markdown("""
 <hr>
 <center>
