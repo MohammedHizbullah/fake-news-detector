@@ -1,91 +1,85 @@
 import streamlit as st
 import pickle
 
+# Custom Page Config
+st.set_page_config(
+    page_title="Fake News Detector",
+    page_icon="🧠",
+    layout="centered"
+)
+
 # Load model and vectorizer
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
+
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-# Custom HTML styles and title
+# --- Custom CSS Styling ---
 st.markdown("""
     <style>
-        .main-title {
-            font-size: 3em;
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .description {
-            text-align: center;
-            font-size: 1.2em;
-            color: #555;
-        }
-        .stTextArea label {
-            font-weight: bold;
-            color: #333;
-        }
-        .prediction-box {
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #f9f9f9;
-            text-align: center;
-            font-size: 1.3em;
-            font-weight: bold;
-        }
-        .real {
-            color: green;
-        }
-        .fake {
-            color: red;
-        }
-    </style>
+    html, body, [class*="css"]  {
+        background-color: #0f1117;
+        color: #f1f1f1;
+        font-family: 'Segoe UI', sans-serif;
+    }
 
-    <div class="main-title">🧠 Fake News Detector</div>
-    <div class="description">Check if a news article is real or fake using AI!</div>
-    <br>
+    .main-title {
+        text-align: center;
+        font-size: 3rem;
+        color: #FF6B6B;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtext {
+        text-align: center;
+        color: #c0c0c0;
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stTextArea textarea {
+        background-color: #1e222d !important;
+        color: #ffffff !important;
+    }
+
+    .stButton>button {
+        background-color: #ff4b4b;
+        color: white;
+        font-weight: bold;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 10px;
+        margin-top: 10px;
+    }
+
+    .footer {
+        margin-top: 3rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #aaaaaa;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# User input
-text = st.text_area("Enter the news article text below:")
+# --- UI ---
+st.markdown("<div class='main-title'>🧠 Fake News Detector</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtext'>Check whether a news article is real or fake using AI</div>", unsafe_allow_html=True)
 
-# Initialize prediction variables
-result = None
-label = ""
-color_class = ""
+# Text input
+text_input = st.text_area("Enter the news article text below 👇")
 
-# Prediction logic
+# Prediction
 if st.button("🔍 Predict"):
-    if text.strip() == "":
-        st.warning("⚠️ Please enter some text.")
+    if text_input.strip():
+        vectorized_input = vectorizer.transform([text_input])
+        prediction = model.predict(vectorized_input)
+        if prediction == 1:
+            st.success("🟢 This appears to be Real News.")
+        else:
+            st.error("🔴 This appears to be Fake News.")
     else:
-        vec = vectorizer.transform([text])
-        result = model.predict(vec)[0]
-        label = "✅ Real News" if result == 1 else "❌ Fake News"
-        color_class = "real" if result == 1 else "fake"
-
-        st.markdown(f"""
-        <div class="prediction-box {color_class}">
-            {label}
-        </div>
-        """, unsafe_allow_html=True)
-
-# Report download button (only shows if prediction was made)
-if result is not None:
-    report = f"""Fake News Detector Report
-
-Input Text:
-{text}
-
-Prediction:
-{"Real News" if result == 1 else "Fake News"}
-"""
-    st.download_button("⬇️ Download Report", data=report, file_name="report.txt")
+        st.warning("⚠️ Please enter some text to analyze.")
 
 # Footer
-st.markdown("""
-<hr>
-<center>
-    <small>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</small>
-</center>
-""", unsafe_allow_html=True)
+st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
