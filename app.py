@@ -58,12 +58,26 @@ if st.button("🔍 Predict"):
         label = "✅ Real News" if result == 1 else "❌ Fake News"
         color_class = "real" if result == 1 else "fake"
 
+        import io
+
+if st.button("⬇️ Download Report"):
+    report = f"""Fake News Detector Report
+
+Input Text:
+{text}
+
+Prediction:
+{"Real News" if result == 1 else "Fake News"}
+"""
+    st.download_button("Download as TXT", data=report, file_name="report.txt")
+
+
         st.markdown(f"""
         <div class="prediction-box {color_class}">
             {label}
         </div>
         """, unsafe_allow_html=True)
-        
+
 st.markdown("""
 <hr>
 <center>
