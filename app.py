@@ -12,8 +12,8 @@ with open("model.pkl", "rb") as f:
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-# NewsAPI Key (replace with your actual key)
-NEWS_API_KEY = "15e30fd26503488a9b0cd88fdafd003b"
+# GNews API Key (replace with your key)
+GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
 
 # --- Elegant CSS Styling ---
 st.markdown("""
@@ -23,7 +23,6 @@ html, body, [class*="css"]  {
     font-family: 'Segoe UI', sans-serif;
     color: #f5f5f5;
 }
-
 .main-title {
     text-align: center;
     font-size: 3.2rem;
@@ -33,14 +32,12 @@ html, body, [class*="css"]  {
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.3rem;
 }
-
 .subtext {
     text-align: center;
     font-size: 1.1rem;
     color: #bbbbbb;
     margin-bottom: 2rem;
 }
-
 .stTextArea textarea {
     background-color: #1d2228 !important;
     color: #ffffff !important;
@@ -50,7 +47,6 @@ html, body, [class*="css"]  {
     border: 1px solid #444 !important;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
-
 .stButton>button {
     background: linear-gradient(to right, #ff416c, #ff4b2b);
     color: white;
@@ -63,12 +59,10 @@ html, body, [class*="css"]  {
     transition: all 0.3s ease;
     box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
-
 .stButton>button:hover {
     background: linear-gradient(to right, #ff4b2b, #ff416c);
     transform: scale(1.03);
 }
-
 .result-box {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid #444;
@@ -78,7 +72,6 @@ html, body, [class*="css"]  {
     text-align: center;
     font-size: 1.2rem;
 }
-
 .footer {
     margin-top: 3rem;
     text-align: center;
@@ -94,7 +87,7 @@ st.markdown("<div class='subtext'>Check whether a news article is real or fake u
 
 text_input = st.text_area("📝 Enter the news article text below:")
 
-# Predict Button
+# Predict User Input
 if st.button("🔍 Predict"):
     if text_input.strip():
         vec_input = vectorizer.transform([text_input])
@@ -106,30 +99,26 @@ if st.button("🔍 Predict"):
     else:
         st.warning("⚠️ Please enter some text to analyze.")
 
-# 🔌 Scan Live News Button
+# Scan Live News from GNews
 if st.button("📰 Scan Live News"):
-    st.subheader("Top Headlines Analysis (India):")
+    st.subheader("Latest News Headlines:")
     try:
-        url = f"https://newsapi.org/v2/top-headlines?country=in&apiKey={NEWS_API_KEY}"
+        url = f"https://gnews.io/api/v4/top-headlines?lang=en&max=10&token={GNEWS_API_KEY}"
         response = requests.get(url)
         data = response.json()
 
-        # Debug print
-        st.code(data)  # Show full API response
-
-        if data["status"] == "ok" and data["totalResults"] > 0:
-            for article in data["articles"][:10]:
+        if "articles" in data:
+            for article in data["articles"]:
                 title = article["title"]
                 vec_title = vectorizer.transform([title])
                 pred = model.predict(vec_title)[0]
                 label = "🟢 Real" if pred == 1 else "🔴 Fake"
                 st.markdown(f"- **{title}** <br> → {label}", unsafe_allow_html=True)
         else:
-            st.warning("No news articles found or limit exceeded.")
+            st.warning("⚠️ No articles found or API limit reached.")
     except Exception as e:
         st.error("Something went wrong while fetching news.")
         st.caption(f"Error details: {e}")
-
 
 # Footer
 st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
