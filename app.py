@@ -12,10 +12,10 @@ with open("model.pkl", "rb") as f:
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-# GNews API Key (replace with your key)
+# GNews API Key
 GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
 
-# --- Elegant CSS Styling ---
+# --- CSS Styling ---
 st.markdown("""
 <style>
 html, body, [class*="css"]  {
@@ -87,21 +87,26 @@ st.markdown("<div class='subtext'>Check whether a news article is real or fake u
 
 text_input = st.text_area("📝 Enter the news article text below:")
 
-# Predict User Input
+# --- Predict User Input with Confidence ---
 if st.button("🔍 Predict"):
     if text_input.strip():
         vec_input = vectorizer.transform([text_input])
-        prediction = model.predict(vec_input)
+        prediction = model.predict(vec_input)[0]
+        proba = model.predict_proba(vec_input)[0]
+
+        real_conf = proba[1] * 100
+        fake_conf = proba[0] * 100
+
         if prediction == 1:
-            st.markdown(f"<div class='result-box'>🟢 <strong>Real News</strong></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='result-box'>🟢 <strong>Real News</strong><br>Confidence: {real_conf:.2f}%</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='result-box'>🔴 <strong>Fake News</strong></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='result-box'>🔴 <strong>Fake News</strong><br>Confidence: {fake_conf:.2f}%</div>", unsafe_allow_html=True)
     else:
         st.warning("⚠️ Please enter some text to analyze.")
 
-# Scan Live News from GNews
+# --- Live News via GNews ---
 if st.button("📰 Scan Live News"):
-    st.subheader("Latest News Headlines:")
+    st.subheader("Latest News Headlines with Prediction:")
     try:
         url = f"https://gnews.io/api/v4/top-headlines?lang=en&max=10&token={GNEWS_API_KEY}"
         response = requests.get(url)
@@ -112,7 +117,9 @@ if st.button("📰 Scan Live News"):
                 title = article["title"]
                 vec_title = vectorizer.transform([title])
                 pred = model.predict(vec_title)[0]
-                label = "🟢 Real" if pred == 1 else "🔴 Fake"
+                proba = model.predict_proba(vec_title)[0]
+                confidence = proba[1] if pred == 1 else proba[0]
+                label = f"🟢 Real ({confidence*100:.2f}%)" if pred == 1 else f"🔴 Fake ({confidence*100:.2f}%)"
                 st.markdown(f"- **{title}** <br> → {label}", unsafe_allow_html=True)
         else:
             st.warning("⚠️ No articles found or API limit reached.")
@@ -120,5 +127,5 @@ if st.button("📰 Scan Live News"):
         st.error("Something went wrong while fetching news.")
         st.caption(f"Error details: {e}")
 
-# Footer
+# --- Footer ---
 st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
