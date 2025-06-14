@@ -3,7 +3,7 @@ import pickle
 import requests
 
 # Page Config
-st.set_page_config(page_title="Fake News Detector", page_icon="🧠", layout="centered")
+st.set_page_config(page_title="Fake News Predictor", page_icon="🔮", layout="centered")
 
 # Load Model and Vectorizer
 with open("model.pkl", "rb") as f:
@@ -14,6 +14,10 @@ with open("vectorizer.pkl", "rb") as f:
 
 # GNews API Key
 GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
+
+# Global report storage
+user_report = ""
+report_lines = []
 
 # --- CSS Styling ---
 st.markdown("""
@@ -82,29 +86,30 @@ html, body, [class*="css"]  {
 """, unsafe_allow_html=True)
 
 # --- UI ---
-st.markdown("<div class='main-title'>🧠 Fake News Detector</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>🧠 Fake News Predictor</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtext'>Check whether a news article is real or fake using AI</div>", unsafe_allow_html=True)
 
 text_input = st.text_area("📝 Enter the news article text below:")
 
-# --- Predict User Input with Confidence ---
+# --- User Input Prediction ---
 if st.button("🔍 Predict"):
     if text_input.strip():
         vec_input = vectorizer.transform([text_input])
         prediction = model.predict(vec_input)[0]
         proba = model.predict_proba(vec_input)[0]
-
         real_conf = proba[1] * 100
         fake_conf = proba[0] * 100
 
         if prediction == 1:
+            user_report = f"Entered Text:\n{text_input}\nPrediction: Real News\nConfidence: {real_conf:.2f}%"
             st.markdown(f"<div class='result-box'>🟢 <strong>Real News</strong><br>Confidence: {real_conf:.2f}%</div>", unsafe_allow_html=True)
         else:
+            user_report = f"Entered Text:\n{text_input}\nPrediction: Fake News\nConfidence: {fake_conf:.2f}%"
             st.markdown(f"<div class='result-box'>🔴 <strong>Fake News</strong><br>Confidence: {fake_conf:.2f}%</div>", unsafe_allow_html=True)
     else:
         st.warning("⚠️ Please enter some text to analyze.")
 
-# --- Live News via GNews ---
+# --- GNews Prediction ---
 if st.button("📰 Scan Live News"):
     st.subheader("Latest News Headlines with Prediction:")
     try:
@@ -119,13 +124,30 @@ if st.button("📰 Scan Live News"):
                 pred = model.predict(vec_title)[0]
                 proba = model.predict_proba(vec_title)[0]
                 confidence = proba[1] if pred == 1 else proba[0]
-                label = f"🟢 Real ({confidence*100:.2f}%)" if pred == 1 else f"🔴 Fake ({confidence*100:.2f}%)"
-                st.markdown(f"- **{title}** <br> → {label}", unsafe_allow_html=True)
+                label_display = f"🟢 Real ({confidence*100:.2f}%)" if pred == 1 else f"🔴 Fake ({confidence*100:.2f}%)"
+
+                st.markdown(f"- **{title}** <br> → {label_display}", unsafe_allow_html=True)
+                report_lines.append(f"{title}\nPrediction: {'Real' if pred == 1 else 'Fake'}\nConfidence: {confidence*100:.2f}%\n")
         else:
             st.warning("⚠️ No articles found or API limit reached.")
     except Exception as e:
         st.error("Something went wrong while fetching news.")
         st.caption(f"Error details: {e}")
+
+# --- Download Combined Report ---
+if user_report or report_lines:
+    final_report = ""
+    if user_report:
+        final_report += user_report + "\n\n---\n\n"
+    if report_lines:
+        final_report += "\n".join(report_lines)
+
+    st.download_button(
+        label="📄 Download Report",
+        data=final_report,
+        file_name="fake_news_report.txt",
+        mime="text/plain"
+    )
 
 # --- Footer ---
 st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
