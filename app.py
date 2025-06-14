@@ -110,7 +110,7 @@ if st.button("🔍 Predict"):
 if st.button("📰 Scan Live News"):
     st.subheader("Top Headlines Analysis (India):")
     try:
-        url = f"https://newsapi.org/v2/top-headlines?country=in&apiKey={15e30fd26503488a9b0cd88fdafd003b}"
+        url = f"https://newsapi.org/v2/top-headlines?country=in&apiKey={NEWS_API_KEY}"
         response = requests.get(url)
         data = response.json()
 
