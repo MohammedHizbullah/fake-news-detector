@@ -1,5 +1,4 @@
 import streamlit as st
-import pickle
 
 # Custom Page Config
 st.set_page_config(
@@ -8,12 +7,8 @@ st.set_page_config(
     layout="centered"
 )
 
-# Load model and vectorizer
-with open("model.pkl", "rb") as f:
-    model = pickle.load(f)
-
-with open("vectorizer.pkl", "rb") as f:
-    vectorizer = pickle.load(f)
+from transformers import pipeline
+classifier = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
 
 # --- Custom CSS Styling ---
 st.markdown("""
@@ -69,17 +64,16 @@ st.markdown("<div class='subtext'>Check whether a news article is real or fake u
 # Text input
 text_input = st.text_area("Enter the news article text below 👇")
 
-# Prediction
+# Prediction using BERT
 if st.button("🔍 Predict"):
     if text_input.strip():
-        vectorized_input = vectorizer.transform([text_input])
-        prediction = model.predict(vectorized_input)
-        if prediction == 1:
-            st.success("🟢 This appears to be Real News.")
-        else:
-            st.error("🔴 This appears to be Fake News.")
+        output = classifier(text_input)[0]
+        label = "🟢 This appears to be Real News." if output['label'] == "POSITIVE" else "🔴 This appears to be Fake News."
+        confidence = output['score'] * 100
+        st.success(f"{label} ({confidence:.2f}% confidence)")
     else:
         st.warning("⚠️ Please enter some text to analyze.")
+
 
 # Footer
 st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
