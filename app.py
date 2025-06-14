@@ -68,19 +68,22 @@ text_input = st.text_area("Enter the news article text below 👇")
 # Prediction using BERT
 if st.button("🔍 Predict"):
     if text_input.strip():
-        result = classifier(text_input)[0]
-        label = result['label']
-        score = result['score'] * 100
+        try:
+            result = classifier(text_input)[0]
+            label = result['label']
+            score = result['score'] * 100
 
-        # Basic logic: 4 or 5 stars = Real, 1 or 2 stars = Fake
-        if "4" in label or "5" in label:
-            st.success(f"🟢 Real News ({label}, {score:.2f}% confidence)")
-        elif "1" in label or "2" in label:
-            st.error(f"🔴 Fake News ({label}, {score:.2f}% confidence)")
-        else:
-            st.info(f"🟡 Uncertain ({label}, {score:.2f}% confidence)")
+            if "4" in label or "5" in label:
+                st.success(f"🟢 Real News ({label}, {score:.2f}% confidence)")
+            elif "1" in label or "2" in label:
+                st.error(f"🔴 Fake News ({label}, {score:.2f}% confidence)")
+            else:
+                st.info(f"🟡 Uncertain ({label}, {score:.2f}% confidence)")
+        except Exception as e:
+            st.error("❌ Error: Unable to process this input. Try a shorter or English headline.")
+            st.caption(f"Details: {e}")
     else:
-        st.warning("⚠️ Please enter some text to analyze.")
+        st.warning("⚠️ Please enter some text.")
 
 
 
