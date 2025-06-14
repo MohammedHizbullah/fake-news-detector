@@ -1,7 +1,8 @@
 import streamlit as st
 import pickle
+import requests
 
-# Page Configuration
+# Page Config
 st.set_page_config(page_title="Fake News Detector", page_icon="🧠", layout="centered")
 
 # Load Model and Vectorizer
@@ -11,17 +12,18 @@ with open("model.pkl", "rb") as f:
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
+# NewsAPI Key (replace with your actual key)
+NEWS_API_KEY = "15e30fd26503488a9b0cd88fdafd003b"
+
 # --- Elegant CSS Styling ---
 st.markdown("""
 <style>
-/* Body background */
-html, body, [class*="css"] {
+html, body, [class*="css"]  {
     background-color: #12181b;
     font-family: 'Segoe UI', sans-serif;
     color: #f5f5f5;
 }
 
-/* Title Gradient */
 .main-title {
     text-align: center;
     font-size: 3.2rem;
@@ -32,7 +34,6 @@ html, body, [class*="css"] {
     margin-bottom: 0.3rem;
 }
 
-/* Subtitle */
 .subtext {
     text-align: center;
     font-size: 1.1rem;
@@ -40,7 +41,6 @@ html, body, [class*="css"] {
     margin-bottom: 2rem;
 }
 
-/* Input box */
 .stTextArea textarea {
     background-color: #1d2228 !important;
     color: #ffffff !important;
@@ -51,8 +51,7 @@ html, body, [class*="css"] {
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-/* Button style */
-.stButton > button {
+.stButton>button {
     background: linear-gradient(to right, #ff416c, #ff4b2b);
     color: white;
     font-weight: 600;
@@ -65,12 +64,11 @@ html, body, [class*="css"] {
     box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
 
-.stButton > button:hover {
+.stButton>button:hover {
     background: linear-gradient(to right, #ff4b2b, #ff416c);
     transform: scale(1.03);
 }
 
-/* Result card */
 .result-box {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid #444;
@@ -81,7 +79,6 @@ html, body, [class*="css"] {
     font-size: 1.2rem;
 }
 
-/* Footer */
 .footer {
     margin-top: 3rem;
     text-align: center;
@@ -91,13 +88,13 @@ html, body, [class*="css"] {
 </style>
 """, unsafe_allow_html=True)
 
-# --- Page UI ---
+# --- UI ---
 st.markdown("<div class='main-title'>🧠 Fake News Detector</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtext'>Check whether a news article is real or fake using AI</div>", unsafe_allow_html=True)
 
 text_input = st.text_area("📝 Enter the news article text below:")
 
-# --- Prediction ---
+# Predict Button
 if st.button("🔍 Predict"):
     if text_input.strip():
         vec_input = vectorizer.transform([text_input])
@@ -109,5 +106,26 @@ if st.button("🔍 Predict"):
     else:
         st.warning("⚠️ Please enter some text to analyze.")
 
-# --- Footer ---
+# 🔌 Scan Live News Button
+if st.button("📰 Scan Live News"):
+    st.subheader("Top Headlines Analysis (India):")
+    try:
+        url = f"https://newsapi.org/v2/top-headlines?country=in&apiKey={15e30fd26503488a9b0cd88fdafd003b}"
+        response = requests.get(url)
+        data = response.json()
+
+        if data["status"] == "ok":
+            for article in data["articles"][:10]:
+                title = article["title"]
+                vec_title = vectorizer.transform([title])
+                pred = model.predict(vec_title)[0]
+                label = "🟢 Real" if pred == 1 else "🔴 Fake"
+                st.markdown(f"- **{title}** <br> → {label}", unsafe_allow_html=True)
+        else:
+            st.error("Failed to fetch news articles.")
+    except Exception as e:
+        st.error("Something went wrong while fetching news.")
+        st.caption(f"Error details: {e}")
+
+# Footer
 st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
