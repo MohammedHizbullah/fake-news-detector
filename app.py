@@ -114,7 +114,10 @@ if st.button("📰 Scan Live News"):
         response = requests.get(url)
         data = response.json()
 
-        if data["status"] == "ok":
+        # Debug print
+        st.code(data)  # Show full API response
+
+        if data["status"] == "ok" and data["totalResults"] > 0:
             for article in data["articles"][:10]:
                 title = article["title"]
                 vec_title = vectorizer.transform([title])
@@ -122,10 +125,11 @@ if st.button("📰 Scan Live News"):
                 label = "🟢 Real" if pred == 1 else "🔴 Fake"
                 st.markdown(f"- **{title}** <br> → {label}", unsafe_allow_html=True)
         else:
-            st.error("Failed to fetch news articles.")
+            st.warning("No news articles found or limit exceeded.")
     except Exception as e:
         st.error("Something went wrong while fetching news.")
         st.caption(f"Error details: {e}")
+
 
 # Footer
 st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
