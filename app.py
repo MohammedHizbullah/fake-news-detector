@@ -8,9 +8,7 @@ st.set_page_config(
 )
 
 from transformers import pipeline
-
-# Load multilingual fake news detection model
-classifier = pipeline("text-classification", model="papluca/xlm-roberta-base-fake-news")
+classifier = pipeline("text-classification", model="nlptown/bert-base-multilingual-uncased-sentiment")
 
 
 # --- Custom CSS Styling ---
@@ -70,12 +68,20 @@ text_input = st.text_area("Enter the news article text below 👇")
 # Prediction using BERT
 if st.button("🔍 Predict"):
     if text_input.strip():
-        output = classifier(text_input)[0]
-        label = "🟢 This appears to be Real News." if output['label'] == "POSITIVE" else "🔴 This appears to be Fake News."
-        confidence = output['score'] * 100
-        st.success(f"{label} ({confidence:.2f}% confidence)")
+        result = classifier(text_input)[0]
+        label = result['label']
+        score = result['score'] * 100
+
+        # Basic logic: 4 or 5 stars = Real, 1 or 2 stars = Fake
+        if "4" in label or "5" in label:
+            st.success(f"🟢 Real News ({label}, {score:.2f}% confidence)")
+        elif "1" in label or "2" in label:
+            st.error(f"🔴 Fake News ({label}, {score:.2f}% confidence)")
+        else:
+            st.info(f"🟡 Uncertain ({label}, {score:.2f}% confidence)")
     else:
         st.warning("⚠️ Please enter some text to analyze.")
+
 
 
 # Footer
