@@ -5,3 +5,4 @@ nltk
 pillow
 transformers
 torch
+sentencepiece

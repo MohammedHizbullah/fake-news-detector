@@ -8,7 +8,10 @@ st.set_page_config(
 )
 
 from transformers import pipeline
-classifier = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
+
+# Load multilingual fake news detection model
+classifier = pipeline("text-classification", model="papluca/xlm-roberta-base-fake-news")
+
 
 # --- Custom CSS Styling ---
 st.markdown("""
