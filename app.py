@@ -1,31 +1,38 @@
 import streamlit as st
-from transformers import pipeline
+import pickle
 
 # Page Configuration
 st.set_page_config(page_title="Fake News Detector", page_icon="🧠", layout="centered")
 
-# Load BERT model (multilingual)
-classifier = pipeline("text-classification", model="nlptown/bert-base-multilingual-uncased-sentiment")
+# Load Model and Vectorizer
+with open("model.pkl", "rb") as f:
+    model = pickle.load(f)
 
-# Elegant CSS Styling
+with open("vectorizer.pkl", "rb") as f:
+    vectorizer = pickle.load(f)
+
+# --- Elegant CSS Styling ---
 st.markdown("""
 <style>
-body {
-    background-color: #0f1117;
-    color: #f1f1f1;
+/* Body background */
+html, body, [class*="css"] {
+    background-color: #12181b;
     font-family: 'Segoe UI', sans-serif;
+    color: #f5f5f5;
 }
 
+/* Title Gradient */
 .main-title {
     text-align: center;
-    font-size: 3.5rem;
-    background: -webkit-linear-gradient(45deg, #00ffe7, #ff4b4b);
+    font-size: 3.2rem;
+    font-weight: bold;
+    background: linear-gradient(to right, #00f5c9, #ff416c);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
+    margin-bottom: 0.3rem;
 }
 
+/* Subtitle */
 .subtext {
     text-align: center;
     font-size: 1.1rem;
@@ -33,74 +40,74 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Input box */
 .stTextArea textarea {
-    background-color: rgba(30, 34, 45, 0.7) !important;
+    background-color: #1d2228 !important;
     color: #ffffff !important;
-    border-radius: 10px;
-    font-size: 1.05rem;
-    padding: 15px;
+    border-radius: 10px !important;
+    padding: 15px !important;
+    font-size: 1rem !important;
+    border: 1px solid #444 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-.stButton>button {
-    background: linear-gradient(90deg, #ff4b4b, #ff8c42);
+/* Button style */
+.stButton > button {
+    background: linear-gradient(to right, #ff416c, #ff4b2b);
     color: white;
-    font-weight: bold;
-    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    font-size: 1rem;
     border: none;
-    border-radius: 12px;
-    transition: 0.3s ease;
-    font-size: 1.1rem;
+    border-radius: 10px;
+    padding: 10px 24px;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
 
-.stButton>button:hover {
-    background: linear-gradient(90deg, #ff8c42, #ff4b4b);
+.stButton > button:hover {
+    background: linear-gradient(to right, #ff4b2b, #ff416c);
     transform: scale(1.03);
 }
 
+/* Result card */
 .result-box {
     background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #444;
     padding: 1.2rem;
     border-radius: 12px;
     margin-top: 1.5rem;
     text-align: center;
     font-size: 1.2rem;
-    border: 1px solid #555;
 }
 
+/* Footer */
 .footer {
     margin-top: 3rem;
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #888888;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- UI Content ---
+# --- Page UI ---
 st.markdown("<div class='main-title'>🧠 Fake News Detector</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtext'>Check whether a news article is real or fake using AI-powered analysis</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtext'>Check whether a news article is real or fake using AI</div>", unsafe_allow_html=True)
 
 text_input = st.text_area("📝 Enter the news article text below:")
 
-# Prediction
+# --- Prediction ---
 if st.button("🔍 Predict"):
     if text_input.strip():
-        try:
-            result = classifier(text_input)[0]
-            label = result['label']
-            score = result['score'] * 100
-
-            if "4" in label or "5" in label:
-                st.markdown(f"<div class='result-box'>🟢 <b>Real News</b><br>({label}, {score:.2f}% confidence)</div>", unsafe_allow_html=True)
-            elif "1" in label or "2" in label:
-                st.markdown(f"<div class='result-box'>🔴 <b>Fake News</b><br>({label}, {score:.2f}% confidence)</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<div class='result-box'>🟡 <b>Uncertain</b><br>({label}, {score:.2f}% confidence)</div>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error("❌ Error: Unable to process this input. Try shorter or English headline.")
-            st.caption(f"Details: {e}")
+        vec_input = vectorizer.transform([text_input])
+        prediction = model.predict(vec_input)
+        if prediction == 1:
+            st.markdown(f"<div class='result-box'>🟢 <strong>Real News</strong></div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div class='result-box'>🔴 <strong>Fake News</strong></div>", unsafe_allow_html=True)
     else:
-        st.warning("⚠️ Please enter some text.")
+        st.warning("⚠️ Please enter some text to analyze.")
 
-# Footer
+# --- Footer ---
 st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
