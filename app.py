@@ -1,10 +1,9 @@
-# ✅ SUPERCOOL FAKE NEWS DETECTOR APP
+# ✅ SUPERCOOL FAKE NEWS DETECTOR APP (ULTRA EDITION)
 
 import streamlit as st
 import pickle
 import requests
 import pandas as pd
-import random
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="wide")
@@ -17,15 +16,13 @@ with open("vectorizer.pkl", "rb") as f:
 
 GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
 
-# --- INIT SESSION ---
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# --- SIDEBAR ---
+# --- SIDEBAR OPTIONS ---
 st.sidebar.title("🛠 Options")
 category = st.sidebar.selectbox("News Category", ["general", "technology", "sports", "science", "business", "entertainment", "health"])
 country = st.sidebar.selectbox("Country", ["in", "us", "gb", "ca", "au"])
-dark_mode = st.sidebar.checkbox("Dark Mode")
 
 # --- STYLING ---
 st.markdown("""
@@ -35,7 +32,16 @@ html, body {
     background: radial-gradient(circle at top left, #1e293b, #0f172a);
     color: #e0f7fa;
     font-family: 'Orbitron', sans-serif;
-    transition: background 0.3s ease;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+    opacity: 0.04;
+    z-index: -1;
 }
 
 h1, h2, h3 {
@@ -51,6 +57,19 @@ h1, h2, h3 {
   to { text-shadow: 0 0 15px #0ff, 0 0 30px #0ff; }
 }
 
+.typing {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid #0ff;
+  width: 0;
+  animation: typing 4s steps(40, end) forwards;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
 textarea, .stTextInput > div > input {
     background-color: #111827;
     color: #0ff;
@@ -58,6 +77,7 @@ textarea, .stTextInput > div > input {
     border-radius: 10px;
     padding: 12px;
     font-size: 16px;
+    transition: all 0.3s;
 }
 
 .stButton > button {
@@ -66,19 +86,31 @@ textarea, .stTextInput > div > input {
     font-weight: bold;
     border-radius: 15px;
     padding: 12px 30px;
-    box-shadow: 0 0 20px #ec4899;
+    box-shadow: 0 0 25px #8b5cf6;
     text-transform: uppercase;
+    animation: pulse 2s infinite;
     transition: transform 0.3s ease;
 }
 
+@keyframes pulse {
+  0% { box-shadow: 0 0 10px #8b5cf6; }
+  50% { box-shadow: 0 0 20px #ec4899; }
+  100% { box-shadow: 0 0 10px #8b5cf6; }
+}
+
 .stButton > button:hover {
-    transform: scale(1.1);
+    transform: scale(1.07);
     background: linear-gradient(to right, #ec4899, #8b5cf6);
-    box-shadow: 0 0 25px #8b5cf6;
 }
 
 .stProgress > div > div > div {
     background: linear-gradient(to right, #34d399, #10b981);
+}
+
+.metric-label, .metric-value {
+    font-size: 1.5rem;
+    color: #fff;
+    text-shadow: 0 0 8px #00ffcc;
 }
 
 .dataframe tbody tr:nth-child(even) {
@@ -93,17 +125,16 @@ textarea, .stTextInput > div > input {
 </style>
 """, unsafe_allow_html=True)
 
-# --- ANIMATED TITLE ---
+# --- HEADER ---
 st.markdown("""
-<h1 style='text-align: center;'>🔮 AI Fake News Detector</h1>
-<h3 style='text-align: center; color: #7dd3fc;'>Decoding the truth, one headline at a time.</h3>
+<h1 style='text-align: center;'>🔮 AI FAKE NEWS DETECTOR</h1>
+<h3 class='typing' style='text-align: center; color: #7dd3fc;'>Decoding the truth, one headline at a time.</h3>
 <hr>
 """, unsafe_allow_html=True)
 
 # --- TEXT PREDICTION ---
 st.header("🎯 Predict From Text")
 text_input = st.text_area("Paste article or headline here:")
-
 if st.button("🔥 Predict Now"):
     if text_input.strip():
         with st.spinner("Analyzing with AI magic... 🧪"):
@@ -112,21 +143,18 @@ if st.button("🔥 Predict Now"):
             prob = model.predict_proba(vec)[0]
             confidence = prob[1] if pred == 1 else prob[0]
             label = "🟢 Real" if pred == 1 else "🔴 Fake"
-
-        st.metric("Result", label)
+        st.metric("Prediction", label)
         st.progress(int(confidence * 100))
-
         st.session_state.history.append({"type": "User Text", "text": text_input, "label": label, "confidence": f"{confidence*100:.2f}%"})
     else:
         st.warning("Please enter some text.")
 
-# --- GNEWS SCAN ---
+# --- LIVE NEWS ---
 st.header("🛰️ Scan Live News")
 if st.button("📡 Fetch Headlines"):
     try:
         url = f"https://gnews.io/api/v4/top-headlines?lang=en&max=10&country={country}&topic={category}&token={GNEWS_API_KEY}"
         res = requests.get(url).json()
-
         if "articles" in res:
             for article in res["articles"]:
                 title = article["title"]
@@ -136,7 +164,6 @@ if st.button("📡 Fetch Headlines"):
                 conf = prob[1] if pred == 1 else prob[0]
                 label = "🟢 Real" if pred == 1 else "🔴 Fake"
                 st.write(f"**{title}** → {label} ({conf*100:.2f}%)")
-
                 st.session_state.history.append({"type": "Live News", "text": title, "label": label, "confidence": f"{conf*100:.2f}%"})
         else:
             st.error("No headlines found or API limit exceeded.")
@@ -154,7 +181,6 @@ if uploaded:
         else:
             df = pd.read_csv(uploaded)
             lines = df.iloc[:, 0].dropna().tolist()
-
         for line in lines:
             vec = vectorizer.transform([line])
             pred = model.predict(vec)[0]
