@@ -1,153 +1,120 @@
+# ✅ UPGRADED FAKE NEWS DETECTOR APP
+
 import streamlit as st
 import pickle
 import requests
+import pandas as pd
 
-# Page Config
-st.set_page_config(page_title="Fake News Predictor", page_icon="🔮", layout="centered")
+# --- CONFIG ---
+st.set_page_config(page_title="Fake News Detector", page_icon="🧠", layout="wide")
 
-# Load Model and Vectorizer
+# --- LOAD MODEL ---
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
-
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-# GNews API Key
 GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
 
-# Global report storage
-user_report = ""
-report_lines = []
+# --- INIT SESSION ---
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-# --- CSS Styling ---
-st.markdown("""
-<style>
-html, body, [class*="css"]  {
-    background-color: #12181b;
-    font-family: 'Segoe UI', sans-serif;
-    color: #f5f5f5;
-}
-.main-title {
-    text-align: center;
-    font-size: 3.2rem;
-    font-weight: bold;
-    background: linear-gradient(to right, #00f5c9, #ff416c);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 0.3rem;
-}
-.subtext {
-    text-align: center;
-    font-size: 1.1rem;
-    color: #bbbbbb;
-    margin-bottom: 2rem;
-}
-.stTextArea textarea {
-    background-color: #1d2228 !important;
-    color: #ffffff !important;
-    border-radius: 10px !important;
-    padding: 15px !important;
-    font-size: 1rem !important;
-    border: 1px solid #444 !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-.stButton>button {
-    background: linear-gradient(to right, #ff416c, #ff4b2b);
-    color: white;
-    font-weight: 600;
-    font-size: 1rem;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 24px;
-    margin-top: 15px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-}
-.stButton>button:hover {
-    background: linear-gradient(to right, #ff4b2b, #ff416c);
-    transform: scale(1.03);
-}
-.result-box {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid #444;
-    padding: 1.2rem;
-    border-radius: 12px;
-    margin-top: 1.5rem;
-    text-align: center;
-    font-size: 1.2rem;
-}
-.footer {
-    margin-top: 3rem;
-    text-align: center;
-    font-size: 0.85rem;
-    color: #888888;
-}
-</style>
-""", unsafe_allow_html=True)
+# --- SIDEBAR ---
+st.sidebar.title("🛠 Options")
+category = st.sidebar.selectbox("News Category", ["general", "technology", "sports", "science", "business", "entertainment", "health"])
+country = st.sidebar.selectbox("Country", ["in", "us", "gb", "ca", "au"])
+dark_mode = st.sidebar.checkbox("Dark Mode")
 
-# --- UI ---
-st.markdown("<div class='main-title'>🧠 Fake News Predictor</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtext'>Check whether a news article is real or fake using AI</div>", unsafe_allow_html=True)
+# --- STYLES ---
+if dark_mode:
+    st.markdown("""
+        <style>
+        html, body, [class*="css"]  {
+            background-color: #12181b;
+            color: #f5f5f5;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-text_input = st.text_area("📝 Enter the news article text below:")
+st.title("🧠 Fake News Detector")
+st.markdown("Use AI to detect whether a news article is real or fake. You can enter text, scan headlines, or upload files.")
 
-# --- User Input Prediction ---
-if st.button("🔍 Predict"):
+# --- TEXT PREDICTION ---
+st.header("🔍 Enter News Article")
+text_input = st.text_area("Paste article or headline here:")
+
+if st.button("Predict Text"):
     if text_input.strip():
-        vec_input = vectorizer.transform([text_input])
-        prediction = model.predict(vec_input)[0]
-        proba = model.predict_proba(vec_input)[0]
-        real_conf = proba[1] * 100
-        fake_conf = proba[0] * 100
+        vec = vectorizer.transform([text_input])
+        pred = model.predict(vec)[0]
+        prob = model.predict_proba(vec)[0]
+        confidence = prob[1] if pred == 1 else prob[0]
+        label = "🟢 Real" if pred == 1 else "🔴 Fake"
 
-        if prediction == 1:
-            user_report = f"Entered Text:\n{text_input}\nPrediction: Real News\nConfidence: {real_conf:.2f}%"
-            st.markdown(f"<div class='result-box'>🟢 <strong>Real News</strong><br>Confidence: {real_conf:.2f}%</div>", unsafe_allow_html=True)
-        else:
-            user_report = f"Entered Text:\n{text_input}\nPrediction: Fake News\nConfidence: {fake_conf:.2f}%"
-            st.markdown(f"<div class='result-box'>🔴 <strong>Fake News</strong><br>Confidence: {fake_conf:.2f}%</div>", unsafe_allow_html=True)
+        st.metric("Prediction", label)
+        st.progress(int(confidence * 100))
+
+        st.session_state.history.append({"type": "User Text", "text": text_input, "label": label, "confidence": f"{confidence*100:.2f}%"})
     else:
-        st.warning("⚠️ Please enter some text to analyze.")
+        st.warning("Please enter some text.")
 
-# --- GNews Prediction ---
-if st.button("📰 Scan Live News"):
-    st.subheader("Latest News Headlines with Prediction:")
+# --- GNEWS SCAN ---
+st.header("📰 Scan Live News")
+if st.button("Fetch Headlines"):
     try:
-        url = f"https://gnews.io/api/v4/top-headlines?lang=en&max=10&token={GNEWS_API_KEY}"
-        response = requests.get(url)
-        data = response.json()
+        url = f"https://gnews.io/api/v4/top-headlines?lang=en&max=10&country={country}&topic={category}&token={GNEWS_API_KEY}"
+        res = requests.get(url).json()
 
-        if "articles" in data:
-            for article in data["articles"]:
+        if "articles" in res:
+            for article in res["articles"]:
                 title = article["title"]
-                vec_title = vectorizer.transform([title])
-                pred = model.predict(vec_title)[0]
-                proba = model.predict_proba(vec_title)[0]
-                confidence = proba[1] if pred == 1 else proba[0]
-                label_display = f"🟢 Real ({confidence*100:.2f}%)" if pred == 1 else f"🔴 Fake ({confidence*100:.2f}%)"
+                vec = vectorizer.transform([title])
+                pred = model.predict(vec)[0]
+                prob = model.predict_proba(vec)[0]
+                conf = prob[1] if pred == 1 else prob[0]
+                label = "🟢 Real" if pred == 1 else "🔴 Fake"
+                st.write(f"**{title}** → {label} ({conf*100:.2f}%)")
 
-                st.markdown(f"- **{title}** <br> → {label_display}", unsafe_allow_html=True)
-                report_lines.append(f"{title}\nPrediction: {'Real' if pred == 1 else 'Fake'}\nConfidence: {confidence*100:.2f}%\n")
+                st.session_state.history.append({"type": "Live News", "text": title, "label": label, "confidence": f"{conf*100:.2f}%"})
         else:
-            st.warning("⚠️ No articles found or API limit reached.")
+            st.error("No headlines found or API limit exceeded.")
     except Exception as e:
-        st.error("Something went wrong while fetching news.")
-        st.caption(f"Error details: {e}")
+        st.error("Failed to fetch headlines.")
+        st.caption(str(e))
 
-# --- Download Combined Report ---
-if user_report or report_lines:
-    final_report = ""
-    if user_report:
-        final_report += user_report + "\n\n---\n\n"
-    if report_lines:
-        final_report += "\n".join(report_lines)
+# --- BATCH FILE UPLOAD ---
+st.header("📁 Upload News Headlines File")
+uploaded = st.file_uploader("Upload a .txt or .csv file (one headline per line)", type=["txt", "csv"])
 
-    st.download_button(
-        label="📄 Download Report",
-        data=final_report,
-        file_name="fake_news_report.txt",
-        mime="text/plain"
-    )
+if uploaded:
+    try:
+        if uploaded.name.endswith(".txt"):
+            lines = uploaded.read().decode("utf-8").splitlines()
+        else:
+            df = pd.read_csv(uploaded)
+            lines = df.iloc[:, 0].dropna().tolist()
 
-# --- Footer ---
-st.markdown("<div class='footer'>Made with ❤️ by Mohammed Hizbullah | Powered by Streamlit</div>", unsafe_allow_html=True)
+        for line in lines:
+            vec = vectorizer.transform([line])
+            pred = model.predict(vec)[0]
+            prob = model.predict_proba(vec)[0]
+            conf = prob[1] if pred == 1 else prob[0]
+            label = "🟢 Real" if pred == 1 else "🔴 Fake"
+            st.write(f"**{line}** → {label} ({conf*100:.2f}%)")
+
+            st.session_state.history.append({"type": "Uploaded", "text": line, "label": label, "confidence": f"{conf*100:.2f}%"})
+    except Exception as e:
+        st.error("Error processing file.")
+        st.caption(str(e))
+
+# --- HISTORY LOG ---
+st.header("📜 Prediction History")
+if st.session_state.history:
+    df = pd.DataFrame(st.session_state.history)
+    st.dataframe(df)
+
+    report_text = "\n\n".join([f"[{row['type']}] {row['text']}\n→ {row['label']} ({row['confidence']})" for i, row in df.iterrows()])
+    st.download_button("📄 Download Report", data=report_text, file_name="fake_news_report.txt")
+else:
+    st.info("No predictions yet. Enter text, scan news or upload a file to begin.")
