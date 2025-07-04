@@ -3,5 +3,5 @@ pandas
 scikit-learn
 requests
 numpy
-pyrebase4
 google-cloud-storage
+git+https://github.com/nhorvath/Pyrebase4.git
