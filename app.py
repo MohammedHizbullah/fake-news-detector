@@ -1,14 +1,156 @@
-# ✅ SUPERCOOL FAKE NEWS DETECTOR APP (ULTRA EDITION)
+ #✅ SUPERCOOL FAKE NEWS DETECTOR APP (ULTRA EDITION + AUTH + FIREBASE + OTP)
 
 import streamlit as st
 import pickle
 import requests
 import pandas as pd
+import sqlite3
+import pyrebase
 
 # --- CONFIG ---
-st.set_page_config(page_title="Fake News Predictor", page_icon="🔮", layout="wide")
+st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="centered")
 
-# --- LOAD MODEL ---
+# --- CUSTOM STYLING FOR LOGIN UI ---
+login_css = """
+<style>
+html, body, [class*="css"]  {
+    background-color: #0f172a;
+    color: #e0f7fa;
+    font-family: 'Segoe UI', sans-serif;
+    animation: fadeIn 1s ease-in;
+}
+
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(-10px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+h1 {
+    text-align: center;
+    color: #00ffc6;
+    text-shadow: 0px 0px 10px #00ffc6;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+label, .stTextInput > div > input {
+    color: #f1f5f9;
+}
+
+.stTextInput > div > input, .stTextArea > div > textarea {
+    background-color: #1e293b;
+    border: 1px solid #38bdf8;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.stButton > button {
+    background: linear-gradient(to right, #06b6d4, #3b82f6);
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0px 0px 10px rgba(0, 255, 255, 0.4);
+    margin-top: 10px;
+    transition: 0.2s;
+}
+
+.stButton > button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(to right, #3b82f6, #06b6d4);
+}
+</style>
+"""
+st.markdown(login_css, unsafe_allow_html=True)
+
+# --- FIREBASE CONFIG FOR GOOGLE + PHONE OTP ---
+firebase_config = {
+    "apiKey": "AIzaSyCwHl6Pta0pBMSoth7DHoJhPeh8InIolNU",
+    "authDomain": "fake-news-predictor-60fcf.firebaseapp.com",
+    "databaseURL": "https://fake-news-predictor.firebaseio.com",
+    "projectId": "fake-news-predictor-60fcf",
+    "storageBucket": "fake-news-predictor-60fcf.firebasestorage.app",
+    "messagingSenderId": "528040723470",
+    "appId": "1:528040723470:web:52e439a7d29a8b962ae85f",
+    "measurementId": "G-0VY4B3SW3H"
+}
+
+firebase = pyrebase.initialize_app(firebase_config)
+auth = firebase.auth()
+
+def firebase_signup(email, password):
+    user = auth.create_user_with_email_and_password(email, password)
+    return user
+
+def firebase_login(email, password):
+    user = auth.sign_in_with_email_and_password(email, password)
+    return user
+
+# --- DATABASE SETUP ---
+conn = sqlite3.connect("users.db", check_same_thread=False)
+c = conn.cursor()
+c.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL,
+    email TEXT,
+    phone TEXT
+)
+""")
+conn.commit()
+
+# --- HELPER FUNCTIONS ---
+def create_user(username, password, email, phone):
+    c.execute("INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)", (username, password, email, phone))
+    conn.commit()
+
+def login_user(username, password):
+    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+    return c.fetchone()
+
+# --- LOGIN PAGE ---
+def login_page():
+    st.markdown("<h1>🔐 Login to Continue</h1>", unsafe_allow_html=True)
+    choice = st.radio("Select", ["Login", "Signup"])
+
+    if choice == "Login":
+        username = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            try:
+                firebase_login(username, password)
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success("Login successful! Redirecting...")
+                st.experimental_rerun()
+            except:
+                st.error("Invalid credentials or user does not exist")
+
+    else:
+        email = st.text_input("Email")
+        password = st.text_input("Create Password", type="password")
+        phone = st.text_input("Phone Number")
+        username = st.text_input("Username")
+        if st.button("Signup"):
+            try:
+                firebase_signup(email, password)
+                create_user(username, password, email, phone)
+                st.success("Account created successfully! Login now.")
+            except:
+                st.error("User creation failed. Email may be taken or password is invalid.")
+
+# --- AUTH CHECK ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    login_page()
+    st.stop()
+
+# --- MAIN APP STARTS ---
+
+# Load model and vectorizer
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 with open("vectorizer.pkl", "rb") as f:
@@ -24,99 +166,9 @@ st.sidebar.title("🛠 Options")
 category = st.sidebar.selectbox("News Category", ["general", "technology", "sports", "science", "business", "entertainment", "health"])
 country = st.sidebar.selectbox("Country", ["in", "us", "gb", "ca", "au"])
 
-# --- STYLING ---
-css_styles = """
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
-<style>
-html, body {
-    background: radial-gradient(circle at top left, #1e293b, #0f172a);
-    color: #e0f7fa;
-    font-family: 'Orbitron', sans-serif;
-    overflow-x: hidden;
-}
-body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
-    opacity: 0.04;
-    z-index: -1;
-}
-h1, h2, h3 {
-    text-transform: uppercase;
-    color: #0ff;
-    text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
-    letter-spacing: 2px;
-    animation: glow 2s ease-in-out infinite alternate;
-}
-@keyframes glow {
-  from { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff; }
-  to { text-shadow: 0 0 15px #0ff, 0 0 30px #0ff; }
-}
-.typing {
-  overflow: hidden;
-  white-space: nowrap;
-  border-right: 2px solid #0ff;
-  width: 0;
-  animation: typing 4s steps(40, end) forwards;
-}
-@keyframes typing {
-  from { width: 0 }
-  to { width: 100% }
-}
-textarea, .stTextInput > div > input {
-    background-color: #111827;
-    color: #0ff;
-    border: 2px dashed #38bdf8;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 16px;
-    transition: all 0.3s;
-}
-.stButton > button {
-    background: linear-gradient(to right, #8b5cf6, #ec4899);
-    color: #fff;
-    font-weight: bold;
-    border-radius: 15px;
-    padding: 12px 30px;
-    box-shadow: 0 0 25px #8b5cf6;
-    text-transform: uppercase;
-    animation: pulse 2s infinite;
-    transition: transform 0.3s ease;
-}
-@keyframes pulse {
-  0% { box-shadow: 0 0 10px #8b5cf6; }
-  50% { box-shadow: 0 0 20px #ec4899; }
-  100% { box-shadow: 0 0 10px #8b5cf6; }
-}
-.stButton > button:hover {
-    transform: scale(1.07);
-    background: linear-gradient(to right, #ec4899, #8b5cf6);
-}
-.stProgress > div > div > div {
-    background: linear-gradient(to right, #34d399, #10b981);
-}
-.metric-label, .metric-value {
-    font-size: 1.5rem;
-    color: #fff;
-    text-shadow: 0 0 8px #00ffcc;
-}
-.dataframe tbody tr:nth-child(even) {
-    background-color: #1e293b;
-}
-.dataframe tbody tr:nth-child(odd) {
-    background-color: #0f172a;
-}
-.dataframe tbody tr:hover {
-    background-color: #334155;
-}
-</style>
-"""
-st.components.v1.html(css_styles, height=0)
-
 # --- HEADER ---
 st.markdown("""
-<h1 style='text-align: center;'>🔮 AI FAKE NEWS PREDICTOR</h1>
+<h1 style='text-align: center;'>🔮 AI FAKE NEWS DETECTOR</h1>
 <h3 class='typing' style='text-align: center; color: #7dd3fc;'>Decoding the truth, one headline at a time.</h3>
 <hr>
 """, unsafe_allow_html=True)
