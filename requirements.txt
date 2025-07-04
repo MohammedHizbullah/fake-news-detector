@@ -1,7 +1,7 @@
 streamlit
 pandas
 scikit-learn
-pyrebase4
 requests
 numpy
+pyrebase4
 google-cloud-storage

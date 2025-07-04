@@ -5,7 +5,7 @@ import pickle
 import requests
 import pandas as pd
 import sqlite3
-import pyrebase
+import pyrebase4 as pyrebase
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="centered")
