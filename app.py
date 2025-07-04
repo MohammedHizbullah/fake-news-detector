@@ -6,7 +6,7 @@ import requests
 import pandas as pd
 
 # --- CONFIG ---
-st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="wide")
+st.set_page_config(page_title="Fake News Predictor", page_icon="🔮", layout="wide")
 
 # --- LOAD MODEL ---
 with open("model.pkl", "rb") as f:
@@ -25,7 +25,7 @@ category = st.sidebar.selectbox("News Category", ["general", "technology", "spor
 country = st.sidebar.selectbox("Country", ["in", "us", "gb", "ca", "au"])
 
 # --- STYLING ---
-st.markdown("""
+css_styles = """
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
 <style>
 html, body {
@@ -34,7 +34,6 @@ html, body {
     font-family: 'Orbitron', sans-serif;
     overflow-x: hidden;
 }
-
 body::before {
     content: "";
     position: fixed;
@@ -43,7 +42,6 @@ body::before {
     opacity: 0.04;
     z-index: -1;
 }
-
 h1, h2, h3 {
     text-transform: uppercase;
     color: #0ff;
@@ -51,12 +49,10 @@ h1, h2, h3 {
     letter-spacing: 2px;
     animation: glow 2s ease-in-out infinite alternate;
 }
-
 @keyframes glow {
   from { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff; }
   to { text-shadow: 0 0 15px #0ff, 0 0 30px #0ff; }
 }
-
 .typing {
   overflow: hidden;
   white-space: nowrap;
@@ -64,12 +60,10 @@ h1, h2, h3 {
   width: 0;
   animation: typing 4s steps(40, end) forwards;
 }
-
 @keyframes typing {
   from { width: 0 }
   to { width: 100% }
 }
-
 textarea, .stTextInput > div > input {
     background-color: #111827;
     color: #0ff;
@@ -79,7 +73,6 @@ textarea, .stTextInput > div > input {
     font-size: 16px;
     transition: all 0.3s;
 }
-
 .stButton > button {
     background: linear-gradient(to right, #8b5cf6, #ec4899);
     color: #fff;
@@ -91,28 +84,23 @@ textarea, .stTextInput > div > input {
     animation: pulse 2s infinite;
     transition: transform 0.3s ease;
 }
-
 @keyframes pulse {
   0% { box-shadow: 0 0 10px #8b5cf6; }
   50% { box-shadow: 0 0 20px #ec4899; }
   100% { box-shadow: 0 0 10px #8b5cf6; }
 }
-
 .stButton > button:hover {
     transform: scale(1.07);
     background: linear-gradient(to right, #ec4899, #8b5cf6);
 }
-
 .stProgress > div > div > div {
     background: linear-gradient(to right, #34d399, #10b981);
 }
-
 .metric-label, .metric-value {
     font-size: 1.5rem;
     color: #fff;
     text-shadow: 0 0 8px #00ffcc;
 }
-
 .dataframe tbody tr:nth-child(even) {
     background-color: #1e293b;
 }
@@ -123,11 +111,12 @@ textarea, .stTextInput > div > input {
     background-color: #334155;
 }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.components.v1.html(css_styles, height=0)
 
 # --- HEADER ---
 st.markdown("""
-<h1 style='text-align: center;'>🔮 AI FAKE NEWS DETECTOR</h1>
+<h1 style='text-align: center;'>🔮 AI FAKE NEWS PREDICTOR</h1>
 <h3 class='typing' style='text-align: center; color: #7dd3fc;'>Decoding the truth, one headline at a time.</h3>
 <hr>
 """, unsafe_allow_html=True)
