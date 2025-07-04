@@ -1,7 +1,6 @@
 streamlit
-scikit-learn
 pandas
-nltk
-numpy
+scikit-learn
+pyrebase4
 requests
-
+numpy
