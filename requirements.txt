@@ -4,3 +4,4 @@ scikit-learn
 pyrebase4
 requests
 numpy
+google-cloud-storage
