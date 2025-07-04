@@ -15,7 +15,7 @@ with open("model.pkl", "rb") as f:
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-GNEWS_API_KEY = "YOUR_GNEWS_API_KEY"
+GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
 
 # --- INIT SESSION ---
 if "history" not in st.session_state:
