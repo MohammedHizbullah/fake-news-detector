@@ -1,9 +1,10 @@
-# ✅ UPGRADED FAKE NEWS DETECTOR APP
+# ✅ SUPERCOOL FAKE NEWS DETECTOR APP
 
 import streamlit as st
 import pickle
 import requests
 import pandas as pd
+import random
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="wide")
@@ -26,90 +27,93 @@ category = st.sidebar.selectbox("News Category", ["general", "technology", "spor
 country = st.sidebar.selectbox("Country", ["in", "us", "gb", "ca", "au"])
 dark_mode = st.sidebar.checkbox("Dark Mode")
 
-# --- ADVANCED CSS ---
+# --- STYLING ---
 st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
 <style>
-body {
-    background: linear-gradient(to right, #1c1c1c, #2e2e2e);
-    color: #ffffff;
-    font-family: 'Segoe UI', sans-serif;
+html, body {
+    background: radial-gradient(circle at top left, #1e293b, #0f172a);
+    color: #e0f7fa;
+    font-family: 'Orbitron', sans-serif;
+    transition: background 0.3s ease;
 }
 
-h1, h2, h3, h4, h5 {
-    color: #00ffdd;
-    font-weight: 700;
+h1, h2, h3 {
+    text-transform: uppercase;
+    color: #0ff;
+    text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+    letter-spacing: 2px;
+    animation: glow 2s ease-in-out infinite alternate;
 }
 
-.css-18e3th9 {
-    padding: 3rem 1rem 1rem 1rem;
-    background: #101010;
-    border-radius: 15px;
-    box-shadow: 0px 0px 20px rgba(0, 255, 221, 0.3);
+@keyframes glow {
+  from { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff; }
+  to { text-shadow: 0 0 15px #0ff, 0 0 30px #0ff; }
+}
+
+textarea, .stTextInput > div > input {
+    background-color: #111827;
+    color: #0ff;
+    border: 2px dashed #38bdf8;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
 }
 
 .stButton > button {
-    background: linear-gradient(to right, #00f5c9, #00c9ff);
-    border: none;
-    border-radius: 12px;
-    padding: 12px 20px;
+    background: linear-gradient(to right, #8b5cf6, #ec4899);
+    color: #fff;
     font-weight: bold;
-    color: #000000;
-    box-shadow: 0 5px 15px rgba(0, 255, 221, 0.3);
-    transition: all 0.3s ease-in-out;
+    border-radius: 15px;
+    padding: 12px 30px;
+    box-shadow: 0 0 20px #ec4899;
+    text-transform: uppercase;
+    transition: transform 0.3s ease;
 }
 
 .stButton > button:hover {
-    background: linear-gradient(to right, #00c9ff, #00f5c9);
-    transform: scale(1.05);
-}
-
-textarea, input[type="text"] {
-    background-color: #2c2c2c;
-    color: #ffffff;
-    border: 1px solid #00ffdd;
-    border-radius: 10px;
-    padding: 10px;
-}
-
-.css-1cpxqw2 {
-    background-color: #2c2c2c !important;
+    transform: scale(1.1);
+    background: linear-gradient(to right, #ec4899, #8b5cf6);
+    box-shadow: 0 0 25px #8b5cf6;
 }
 
 .stProgress > div > div > div {
-    background-image: linear-gradient(to right, #ff416c, #ff4b2b);
+    background: linear-gradient(to right, #34d399, #10b981);
 }
 
 .dataframe tbody tr:nth-child(even) {
-    background-color: #1f1f1f;
+    background-color: #1e293b;
 }
-
+.dataframe tbody tr:nth-child(odd) {
+    background-color: #0f172a;
+}
 .dataframe tbody tr:hover {
-    background-color: #333333;
-}
-
-footer, header, .reportview-container .main footer {
-    visibility: hidden;
+    background-color: #334155;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- MAIN UI ---
-st.title("🔮 Fake News Detector")
-st.markdown("Use AI to detect whether a news article is real or fake. You can enter text, scan headlines, or upload files.")
+# --- ANIMATED TITLE ---
+st.markdown("""
+<h1 style='text-align: center;'>🔮 AI Fake News Detector</h1>
+<h3 style='text-align: center; color: #7dd3fc;'>Decoding the truth, one headline at a time.</h3>
+<hr>
+""", unsafe_allow_html=True)
 
 # --- TEXT PREDICTION ---
-st.header("🔮 Enter News Article")
+st.header("🎯 Predict From Text")
 text_input = st.text_area("Paste article or headline here:")
 
-if st.button("Predict Text"):
+if st.button("🔥 Predict Now"):
     if text_input.strip():
-        vec = vectorizer.transform([text_input])
-        pred = model.predict(vec)[0]
-        prob = model.predict_proba(vec)[0]
-        confidence = prob[1] if pred == 1 else prob[0]
-        label = "🟢 Real" if pred == 1 else "🔴 Fake"
+        with st.spinner("Analyzing with AI magic... 🧪"):
+            vec = vectorizer.transform([text_input])
+            pred = model.predict(vec)[0]
+            prob = model.predict_proba(vec)[0]
+            confidence = prob[1] if pred == 1 else prob[0]
+            label = "🟢 Real" if pred == 1 else "🔴 Fake"
 
-        st.metric("Prediction", label)
+        st.metric("Result", label)
         st.progress(int(confidence * 100))
 
         st.session_state.history.append({"type": "User Text", "text": text_input, "label": label, "confidence": f"{confidence*100:.2f}%"})
@@ -117,8 +121,8 @@ if st.button("Predict Text"):
         st.warning("Please enter some text.")
 
 # --- GNEWS SCAN ---
-st.header("📰 Scan Live News")
-if st.button("Fetch Headlines"):
+st.header("🛰️ Scan Live News")
+if st.button("📡 Fetch Headlines"):
     try:
         url = f"https://gnews.io/api/v4/top-headlines?lang=en&max=10&country={country}&topic={category}&token={GNEWS_API_KEY}"
         res = requests.get(url).json()
@@ -140,10 +144,9 @@ if st.button("Fetch Headlines"):
         st.error("Failed to fetch headlines.")
         st.caption(str(e))
 
-# --- BATCH FILE UPLOAD ---
-st.header("📁 Upload News Headlines File")
-uploaded = st.file_uploader("Upload a .txt or .csv file (one headline per line)", type=["txt", "csv"])
-
+# --- FILE UPLOAD ---
+st.header("📁 Upload Headlines")
+uploaded = st.file_uploader("Upload .txt or .csv file (one headline per line)", type=["txt", "csv"])
 if uploaded:
     try:
         if uploaded.name.endswith(".txt"):
@@ -159,19 +162,17 @@ if uploaded:
             conf = prob[1] if pred == 1 else prob[0]
             label = "🟢 Real" if pred == 1 else "🔴 Fake"
             st.write(f"**{line}** → {label} ({conf*100:.2f}%)")
-
             st.session_state.history.append({"type": "Uploaded", "text": line, "label": label, "confidence": f"{conf*100:.2f}%"})
     except Exception as e:
         st.error("Error processing file.")
         st.caption(str(e))
 
-# --- HISTORY LOG ---
+# --- HISTORY ---
 st.header("📜 Prediction History")
 if st.session_state.history:
     df = pd.DataFrame(st.session_state.history)
     st.dataframe(df)
-
     report_text = "\n\n".join([f"[{row['type']}] {row['text']}\n→ {row['label']} ({row['confidence']})" for i, row in df.iterrows()])
-    st.download_button("📄 Download Report", data=report_text, file_name="fake_news_report.txt")
+    st.download_button("📄 Download Full Report", data=report_text, file_name="fake_news_report.txt")
 else:
-    st.info("No predictions yet. Enter text, scan news or upload a file to begin.")
+    st.info("No predictions yet. Enter text, scan news, or upload a file to begin.")
