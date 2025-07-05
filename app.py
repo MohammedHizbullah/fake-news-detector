@@ -4,7 +4,6 @@ import streamlit as st
 import pickle
 import requests
 import pandas as pd
-import sqlite3
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 
@@ -94,13 +93,9 @@ def firebase_login(email, password):
         raise ValueError("Invalid credentials")
 
 
-def # Removed: create_user function no longer needed (SQLite removed):
-    c.execute("INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)", (username, password, email, phone))
-    conn.commit()
 
-def # Removed: login_user function no longer needed (SQLite removed):
-    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
-    return c.fetchone()
+
+
 
 # --- LOGIN PAGE ---
 def login_page():
