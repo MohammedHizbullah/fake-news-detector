@@ -69,7 +69,9 @@ st.markdown(login_css, unsafe_allow_html=True)
 import json
 cred_dict = st.secrets["firebase"]
 cred = credentials.Certificate(dict(st.secrets["firebase"]))
-firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
 
 def firebase_signup(email, password):
     try:
