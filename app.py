@@ -84,8 +84,6 @@ def firebase_signup(email, password):
         return response.json()
     else:
         raise ValueError("Signup failed. Try a different email or stronger password.")
-    else:
-        raise ValueError("Signup failed. Try a different email or stronger password.")
     
 
 def firebase_login(email, password):
