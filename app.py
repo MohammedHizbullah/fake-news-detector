@@ -92,8 +92,6 @@ def firebase_login(email, password):
         return response.json()
     else:
         raise ValueError("Invalid credentials")
-    except Exception as e:
-        raise e
 
 # --- DATABASE SETUP ---
 conn = sqlite3.connect("users.db", check_same_thread=False)
