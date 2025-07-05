@@ -93,25 +93,12 @@ def firebase_login(email, password):
     else:
         raise ValueError("Invalid credentials")
 
-# --- DATABASE SETUP ---
-conn = sqlite3.connect("users.db", check_same_thread=False)
-c = conn.cursor()
-c.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    username TEXT PRIMARY KEY,
-    password TEXT NOT NULL,
-    email TEXT,
-    phone TEXT
-)
-""")
-conn.commit()
 
-# --- HELPER FUNCTIONS ---
-def create_user(username, password, email, phone):
+def # Removed: create_user function no longer needed (SQLite removed):
     c.execute("INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)", (username, password, email, phone))
     conn.commit()
 
-def login_user(username, password):
+def # Removed: login_user function no longer needed (SQLite removed):
     c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
     return c.fetchone()
 
@@ -141,7 +128,7 @@ def login_page():
         if st.button("Signup"):
             try:
                 firebase_signup(email, password)
-                create_user(username, password, email, phone)
+                # Removed: Local user creation since Firebase Auth handles it
                 st.success("Account created successfully! Login now.")
             except:
                 st.error("User creation failed. Email may be taken or password is invalid.")
