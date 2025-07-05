@@ -68,7 +68,7 @@ st.markdown(login_css, unsafe_allow_html=True)
 # --- FIREBASE CONFIG FOR GOOGLE + PHONE OTP ---
 import json
 cred_dict = st.secrets["firebase"]
-cred = credentials.Certificate(json.loads(json.dumps(cred_dict)))
+cred = credentials.Certificate(dict(st.secrets["firebase"]))
 firebase_admin.initialize_app(cred)
 
 def firebase_signup(email, password):
