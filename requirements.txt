@@ -1,6 +1,6 @@
 streamlit
 pandas
-scikit-learn
-requests
 numpy
+scikit-learn
 firebase-admin
+requests

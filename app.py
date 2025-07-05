@@ -68,10 +68,9 @@ st.markdown(login_css, unsafe_allow_html=True)
 # --- FIREBASE CONFIG FOR GOOGLE + PHONE OTP ---
 import json
 cred_dict = st.secrets["firebase"]
-cred = credentials.Certificate(dict(st.secrets["firebase"]))
+cred = credentials.Certificate(json.loads(json.dumps(cred_dict)))
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
-
 
 def firebase_signup(email, password):
     try:
@@ -81,9 +80,18 @@ def firebase_signup(email, password):
         raise e
 
 def firebase_login(email, password):
-    try:
-        user = firebase_auth.get_user_by_email(email)
-        return user
+    api_key = st.secrets["firebase_web_api_key"]
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
+    data = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise ValueError("Invalid credentials")
     except Exception as e:
         raise e
 
