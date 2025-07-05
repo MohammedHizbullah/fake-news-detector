@@ -1,7 +1,6 @@
 streamlit
 pandas
 scikit-learn
-requests
 numpy
-git+https://github.com/nhorvath/Pyrebase4.git
-google-cloud-storage
+requests
+firebase-admin

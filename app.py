@@ -1,11 +1,12 @@
- #✅ SUPERCOOL FAKE NEWS DETECTOR APP (ULTRA EDITION + AUTH + FIREBASE + OTP)
+# ✅ SUPERCOOL FAKE NEWS DETECTOR APP (ULTRA EDITION + AUTH + FIREBASE + OTP)
 
 import streamlit as st
 import pickle
 import requests
 import pandas as pd
 import sqlite3
-import pyrebase
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="centered")
@@ -65,27 +66,24 @@ label, .stTextInput > div > input {
 st.markdown(login_css, unsafe_allow_html=True)
 
 # --- FIREBASE CONFIG FOR GOOGLE + PHONE OTP ---
-firebase_config = {
-    "apiKey": "AIzaSyCwHl6Pta0pBMSoth7DHoJhPeh8InIolNU",
-    "authDomain": "fake-news-predictor-60fcf.firebaseapp.com",
-    "databaseURL": "https://fake-news-predictor.firebaseio.com",
-    "projectId": "fake-news-predictor-60fcf",
-    "storageBucket": "fake-news-predictor-60fcf.firebasestorage.app",
-    "messagingSenderId": "528040723470",
-    "appId": "1:528040723470:web:52e439a7d29a8b962ae85f",
-    "measurementId": "G-0VY4B3SW3H"
-}
-
-firebase = pyrebase.initialize_app(firebase_config)
-auth = firebase.auth()
+import json
+cred_dict = st.secrets["firebase"]
+cred = credentials.Certificate(json.loads(json.dumps(cred_dict)))
+firebase_admin.initialize_app(cred)
 
 def firebase_signup(email, password):
-    user = auth.create_user_with_email_and_password(email, password)
-    return user
+    try:
+        user = firebase_auth.create_user(email=email, password=password)
+        return user
+    except Exception as e:
+        raise e
 
 def firebase_login(email, password):
-    user = auth.sign_in_with_email_and_password(email, password)
-    return user
+    try:
+        user = firebase_auth.get_user_by_email(email)
+        return user
+    except Exception as e:
+        raise e
 
 # --- DATABASE SETUP ---
 conn = sqlite3.connect("users.db", check_same_thread=False)
@@ -156,7 +154,7 @@ with open("model.pkl", "rb") as f:
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
+GNEWS_API_KEY = st.secrets["gnews_key"]
 
 if "history" not in st.session_state:
     st.session_state.history = []
