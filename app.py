@@ -72,9 +72,18 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 def firebase_signup(email, password):
-    try:
-        user = firebase_auth.create_user(email=email, password=password)
-        return user
+    api_key = st.secrets["firebase_web_api_key"]
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
+    data = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise ValueError("Signup failed. Try a different email or stronger password.")
     except Exception as e:
         raise e
 
