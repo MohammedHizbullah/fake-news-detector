@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
+import json
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="centered")
@@ -64,8 +65,7 @@ label, .stTextInput > div > input {
 """
 st.markdown(login_css, unsafe_allow_html=True)
 
-# --- FIREBASE CONFIG FOR GOOGLE + PHONE OTP ---
-import json
+# --- FIREBASE CONFIG ---
 cred_dict = st.secrets["firebase"]
 cred = credentials.Certificate(dict(cred_dict))
 if not firebase_admin._apps:
@@ -83,8 +83,8 @@ def firebase_signup(email, password):
     if response.status_code == 200:
         return response.json()
     else:
-        raise ValueError("Signup failed. Try a different email or stronger password.")
-    
+        error_msg = response.json().get("error", {}).get("message", "Unknown error")
+        raise ValueError(f"Signup failed: {error_msg}")
 
 def firebase_login(email, password):
     api_key = st.secrets["firebase_web_api_key"]
@@ -98,12 +98,8 @@ def firebase_login(email, password):
     if response.status_code == 200:
         return response.json()
     else:
-        raise ValueError("Invalid credentials")
-
-
-
-
-
+        error_msg = response.json().get("error", {}).get("message", "Invalid credentials")
+        raise ValueError(f"Login failed: {error_msg}")
 
 # --- LOGIN PAGE ---
 def login_page():
@@ -111,17 +107,17 @@ def login_page():
     choice = st.radio("Select", ["Login", "Signup"])
 
     if choice == "Login":
-        username = st.text_input("Email")
+        email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         if st.button("Login"):
             try:
-                firebase_login(username, password)
+                firebase_login(email, password)
                 st.session_state.logged_in = True
-                st.session_state.username = username
+                st.session_state.username = email
                 st.success("Login successful! Redirecting...")
                 st.experimental_rerun()
-            except:
-                st.error("Invalid credentials or user does not exist")
+            except Exception as e:
+                st.error(str(e))
 
     else:
         email = st.text_input("Email")
@@ -131,10 +127,9 @@ def login_page():
         if st.button("Signup"):
             try:
                 firebase_signup(email, password)
-                # Removed: Local user creation since Firebase Auth handles it
-                st.success("Account created successfully! Login now.")
-            except:
-                st.error("User creation failed. Email may be taken or password is invalid.")
+                st.success("Account created successfully! You can now log in.")
+            except Exception as e:
+                st.error(str(e))
 
 # --- AUTH CHECK ---
 if "logged_in" not in st.session_state:
@@ -145,8 +140,6 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- MAIN APP STARTS ---
-
-# Load model and vectorizer
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 with open("vectorizer.pkl", "rb") as f:
@@ -157,19 +150,16 @@ GNEWS_API_KEY = st.secrets["gnews_key"]
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# --- SIDEBAR OPTIONS ---
 st.sidebar.title("🛠 Options")
 category = st.sidebar.selectbox("News Category", ["general", "technology", "sports", "science", "business", "entertainment", "health"])
 country = st.sidebar.selectbox("Country", ["in", "us", "gb", "ca", "au"])
 
-# --- HEADER ---
 st.markdown("""
 <h1 style='text-align: center;'>🔮 AI FAKE NEWS DETECTOR</h1>
 <h3 class='typing' style='text-align: center; color: #7dd3fc;'>Decoding the truth, one headline at a time.</h3>
 <hr>
 """, unsafe_allow_html=True)
 
-# --- TEXT PREDICTION ---
 st.header("🎯 Predict From Text")
 text_input = st.text_area("Paste article or headline here:")
 if st.button("🔥 Predict Now"):
@@ -186,7 +176,6 @@ if st.button("🔥 Predict Now"):
     else:
         st.warning("Please enter some text.")
 
-# --- LIVE NEWS ---
 st.header("🛰️ Scan Live News")
 if st.button("📡 Fetch Headlines"):
     try:
@@ -208,7 +197,6 @@ if st.button("📡 Fetch Headlines"):
         st.error("Failed to fetch headlines.")
         st.caption(str(e))
 
-# --- FILE UPLOAD ---
 st.header("📁 Upload Headlines")
 uploaded = st.file_uploader("Upload .txt or .csv file (one headline per line)", type=["txt", "csv"])
 if uploaded:
@@ -230,7 +218,6 @@ if uploaded:
         st.error("Error processing file.")
         st.caption(str(e))
 
-# --- HISTORY ---
 st.header("📜 Prediction History")
 if st.session_state.history:
     df = pd.DataFrame(st.session_state.history)
