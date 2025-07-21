@@ -66,19 +66,26 @@ label, .stTextInput > div > input {
 st.markdown(login_css, unsafe_allow_html=True)
 
 # --- FIREBASE CONFIG ---
-cred_dict = st.secrets["firebase"]
-cred = credentials.Certificate(dict(cred_dict))
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
+try:
+    cred_dict = dict(st.secrets["firebase"])
+    cred = credentials.Certificate(cred_dict)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
+except KeyError:
+    st.error("🔒 Firebase credentials not found in secrets! Check your configuration.")
+    st.stop()
 
+# --- Load Web API key safely ---
+try:
+    FIREBASE_WEB_API_KEY = st.secrets["firebase_web_api_key"]
+except KeyError:
+    st.error("🔑 Firebase Web API Key not found in secrets. Please check Streamlit secrets config.")
+    st.stop()
+
+# --- FUNCTIONS ---
 def firebase_signup(email, password):
-    api_key = st.secrets["firebase_web_api_key"]
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
-    data = {
-        "email": email,
-        "password": password,
-        "returnSecureToken": True
-    }
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_WEB_API_KEY}"
+    data = {"email": email, "password": password, "returnSecureToken": True}
     response = requests.post(url, json=data)
     if response.status_code == 200:
         return response.json()
@@ -87,19 +94,15 @@ def firebase_signup(email, password):
         raise ValueError(f"Signup failed: {error_msg}")
 
 def firebase_login(email, password):
-    api_key = st.secrets["firebase_web_api_key"]
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
-    data = {
-        "email": email,
-        "password": password,
-        "returnSecureToken": True
-    }
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
+    data = {"email": email, "password": password, "returnSecureToken": True}
     response = requests.post(url, json=data)
     if response.status_code == 200:
         return response.json()
     else:
         error_msg = response.json().get("error", {}).get("message", "Invalid credentials")
         raise ValueError(f"Login failed: {error_msg}")
+
 
 # --- LOGIN PAGE ---
 def login_page():
