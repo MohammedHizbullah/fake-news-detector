@@ -3,4 +3,3 @@ pandas
 numpy
 scikit-learn
 requests
-sqlite3; sys_platform == "linux"
