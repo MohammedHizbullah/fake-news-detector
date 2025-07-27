@@ -120,6 +120,8 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     login_page()
+    st.stop()
+
 
 # --- MAIN APP STARTS ---
 with open("model.pkl", "rb") as f:
