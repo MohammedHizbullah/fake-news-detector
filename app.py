@@ -102,8 +102,7 @@ def login_page():
             if result:
                 st.session_state.logged_in = True
                 st.session_state.username = result[0]
-                st.success("Login successful! Redirecting...")
-                st.experimental_rerun()
+                st.success("Login successful!")
             else:
                 st.error("Invalid Credentials")
 
@@ -121,7 +120,6 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     login_page()
-    st.stop()
 
 # --- MAIN APP STARTS ---
 with open("model.pkl", "rb") as f:
