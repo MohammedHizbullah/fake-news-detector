@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 import sqlite3
 import hashlib
+import os
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="centered")
@@ -64,23 +65,25 @@ label, .stTextInput > div > input {
 """
 st.markdown(login_css, unsafe_allow_html=True)
 
+DB_FILE = os.path.join(os.getcwd(), "users.db")
+
 # --- DB SETUP ---
 def create_usertable():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users(username TEXT, email TEXT, password TEXT)''')
     conn.commit()
     conn.close()
 
 def add_userdata(username, email, password):
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute('INSERT INTO users(username, email, password) VALUES (?, ?, ?)', (username, email, password))
     conn.commit()
     conn.close()
 
 def login_user(email, password):
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute('SELECT * FROM users WHERE email = ? AND password = ?', (email, password))
     data = c.fetchone()
@@ -103,6 +106,7 @@ def login_page():
                 st.session_state.logged_in = True
                 st.session_state.username = result[0]
                 st.success("Login successful!")
+                st.stop()
             else:
                 st.error("Invalid Credentials")
 
@@ -113,6 +117,7 @@ def login_page():
         if st.button("Signup"):
             add_userdata(username, email, password)
             st.success("Account created successfully! You can now log in.")
+            st.stop()
 
 # --- AUTH CHECK ---
 if "logged_in" not in st.session_state:
@@ -120,8 +125,6 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     login_page()
-    st.stop()
-
 
 # --- MAIN APP STARTS ---
 with open("model.pkl", "rb") as f:
