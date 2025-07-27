@@ -1,12 +1,11 @@
-# ✅ SUPERCOOL FAKE NEWS DETECTOR APP (ULTRA EDITION + AUTH + FIREBASE + OTP)
+# ✅ SUPERCOOL FAKE NEWS DETECTOR APP (OFFLINE EDITION + LOCAL LOGIN)
 
 import streamlit as st
 import pickle
 import requests
 import pandas as pd
-import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
-import json
+import sqlite3
+import hashlib
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="centered")
@@ -65,44 +64,30 @@ label, .stTextInput > div > input {
 """
 st.markdown(login_css, unsafe_allow_html=True)
 
-# --- FIREBASE CONFIG ---
-try:
-    cred_dict = dict(st.secrets["firebase"])
-    cred = credentials.Certificate(cred_dict)
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app(cred)
-except KeyError:
-    st.error("🔒 Firebase credentials not found in secrets! Check your configuration.")
-    st.stop()
+# --- DB SETUP ---
+def create_usertable():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users(username TEXT, email TEXT, password TEXT)''')
+    conn.commit()
+    conn.close()
 
-# --- Load Web API key safely ---
-try:
-    FIREBASE_WEB_API_KEY = st.secrets["firebase_web_api_key"]
-except KeyError:
-    st.error("🔑 Firebase Web API Key not found in secrets. Please check Streamlit secrets config.")
-    st.stop()
+def add_userdata(username, email, password):
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('INSERT INTO users(username, email, password) VALUES (?, ?, ?)', (username, email, password))
+    conn.commit()
+    conn.close()
 
-# --- FUNCTIONS ---
-def firebase_signup(email, password):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_WEB_API_KEY}"
-    data = {"email": email, "password": password, "returnSecureToken": True}
-    response = requests.post(url, json=data)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        error_msg = response.json().get("error", {}).get("message", "Unknown error")
-        raise ValueError(f"Signup failed: {error_msg}")
+def login_user(email, password):
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE email = ? AND password = ?', (email, password))
+    data = c.fetchone()
+    conn.close()
+    return data
 
-def firebase_login(email, password):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
-    data = {"email": email, "password": password, "returnSecureToken": True}
-    response = requests.post(url, json=data)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        error_msg = response.json().get("error", {}).get("message", "Invalid credentials")
-        raise ValueError(f"Login failed: {error_msg}")
-
+create_usertable()
 
 # --- LOGIN PAGE ---
 def login_page():
@@ -113,26 +98,22 @@ def login_page():
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         if st.button("Login"):
-            try:
-                firebase_login(email, password)
+            result = login_user(email, password)
+            if result:
                 st.session_state.logged_in = True
-                st.session_state.username = email
+                st.session_state.username = result[0]
                 st.success("Login successful! Redirecting...")
                 st.experimental_rerun()
-            except Exception as e:
-                st.error(str(e))
+            else:
+                st.error("Invalid Credentials")
 
     else:
         email = st.text_input("Email")
         password = st.text_input("Create Password", type="password")
-        phone = st.text_input("Phone Number")
         username = st.text_input("Username")
         if st.button("Signup"):
-            try:
-                firebase_signup(email, password)
-                st.success("Account created successfully! You can now log in.")
-            except Exception as e:
-                st.error(str(e))
+            add_userdata(username, email, password)
+            st.success("Account created successfully! You can now log in.")
 
 # --- AUTH CHECK ---
 if "logged_in" not in st.session_state:
@@ -148,7 +129,7 @@ with open("model.pkl", "rb") as f:
 with open("vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
 
-GNEWS_API_KEY = st.secrets["gnews_key"]
+GNEWS_API_KEY = "da8e9a69097dee5d1aaf671b363a5b42"
 
 if "history" not in st.session_state:
     st.session_state.history = []
