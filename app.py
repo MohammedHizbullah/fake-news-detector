@@ -9,7 +9,7 @@ import hashlib
 import os
 
 # --- CONFIG ---
-st.set_page_config(page_title="Fake News Detector", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="Fake News Predictor", page_icon="🔮", layout="centered")
 
 # --- CUSTOM STYLING FOR LOGIN UI ---
 login_css = """
@@ -142,7 +142,7 @@ category = st.sidebar.selectbox("News Category", ["general", "technology", "spor
 country = st.sidebar.selectbox("Country", ["in", "us", "gb", "ca", "au"])
 
 st.markdown("""
-<h1 style='text-align: center;'>🔮 AI FAKE NEWS DETECTOR</h1>
+<h1 style='text-align: center;'>🔮 AI FAKE NEWS PREDICTOR</h1>
 <h3 class='typing' style='text-align: center; color: #7dd3fc;'>Decoding the truth, one headline at a time.</h3>
 <hr>
 """, unsafe_allow_html=True)
